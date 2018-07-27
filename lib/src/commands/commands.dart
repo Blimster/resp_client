@@ -102,4 +102,12 @@ class RespCommands {
   Future<int> ttl(String key) async {
     return _getInteger(await _execCmd(['TTL', key]));
   }
+
+  ///
+  /// Sets the timeout for the given [key]. Returns [true], if the timeout was successfully set. Otherwise, [false] is returned.
+  ///
+  Future<bool> pexpire(String key, Duration timeout) async {
+    return _getInteger(await _execCmd(['PEXPIRE', key, timeout.inMilliseconds])) == 1;
+  }
+
 }
