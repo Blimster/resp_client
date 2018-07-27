@@ -1,0 +1,15 @@
+name: resp_client
+description: A RESP (REdis Serialization Protocol) client for Dart.
+version: 0.1.0
+author: Oliver Damm <oliver.damm@gmx.de>
+homepage: http://www.github.com/blimster/resp_client
+
+environment:
+  sdk: '>=2.0.0-dev.69.0 <3.0.0'
+
+dependencies:
+  rxdart: '^0.18.1'
+
+dev_dependencies:
+  build_runner: '^0.9.1'
+  build_web_compilers: '^0.4.0'
