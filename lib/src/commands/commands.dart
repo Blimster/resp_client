@@ -110,4 +110,28 @@ class RespCommands {
     return _getInteger(await _execCmd(['PEXPIRE', key, timeout.inMilliseconds])) == 1;
   }
 
+  ///
+  /// Selects the Redis logical database. Completes with no value, if the command was successful.
+  ///
+  Future<void> select(int index) async {
+    _getSimpleString(await _execCmd(['SELECT', index])) == 'OK';
+    return null;
+  }
+
+  ///
+  /// Flushes the currently selected database. Completes with no value, if the command was successful.
+  ///
+  Future<void> flushDb({bool doAsync = false}) async {
+    _getSimpleString(await _execCmd(doAsync ? ['FLUSHDB', 'ASYNC'] : ['FLUSHDB'])) == 'OK';
+    return null;
+  }
+
+  ///
+  /// Flushes all databases. Completes with no value, if the command was successful.
+  ///
+  Future<void> flushAll({bool doAsync = false}) async {
+    _getSimpleString(await _execCmd(doAsync ? ['FLUSHALL', 'ASYNC'] : ['FLUSHDB'])) == 'OK';
+    return null;
+  }
+
 }

@@ -35,5 +35,49 @@ void main(List<String> args) async {
 
 ```
 
+## Use commands
+
+If the command needed is already implemented, just use the `RespCommands` class.
+
+```dart
+
+import 'package:resp_client/resp_client.dart';
+import 'package:resp_client/resp_commands.dart';
+
+void main(List<String> args) async {
+
+  // ... setup connection and client
+  
+  // create RESP commands using the client
+  RespCommands commands = RespCommands(client);
+
+  // execute a command
+  final String value = await commands.get('someKey');
+
+  // ... close connection
+}
+
+```
+
+## Use low-level API
+
+If the command needed is not implemented, use the low-level API (or create an issue or pull request on GitHub).
+
+```dart
+
+import 'package:resp_client/resp_client.dart';
+import 'package:resp_client/resp_commands.dart';
+
+void main(List<String> args) async {
+
+  // ... setup connection and client
+  
+  // execute a command
+  final RespType result = await client.writeType(RespArray([RespBulkString('GET'), RespBulkString('someKey')]));
+
+  // ... close connection
+}
+
+```
 
 

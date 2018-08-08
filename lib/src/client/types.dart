@@ -15,6 +15,10 @@ abstract class RespType<P> {
     return '$prefix$payload$suffix';
   }
 
+  @override
+  String toString() {
+    return serialize();
+  }
 }
 
 ///
@@ -90,14 +94,20 @@ Future<RespType> _deserializeRespType(_StreamReader _streamReader) async {
     case 0x24: // bulk string
       final length = int.parse(String.fromCharCodes(await _streamReader.takeWhile((data) => data != 0x0d)));
       await _streamReader.takeCount(2);
+      if(length == -1) {
+        return null;
+      }
       final payload = String.fromCharCodes(await _streamReader.takeCount(length));
       await _streamReader.takeCount(2);
       return RespBulkString(payload);
     case 0x2a: // array
       final count = int.parse(String.fromCharCodes(await _streamReader.takeWhile((data) => data != 0x0d)));
       await _streamReader.takeCount(2);
+      if(count == -1) {
+        return null;
+      }
       final elements = <RespType>[];
-      for(int i = 0; i < count; i++) {
+      for (int i = 0; i < count; i++) {
         elements.add(await _deserializeRespType(_streamReader));
       }
       return RespArray(elements);

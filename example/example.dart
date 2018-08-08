@@ -14,6 +14,8 @@ void main(List<String> args) async {
   final clientList = await commands.clientList();
   print(clientList);
 
+  await commands.select(1);
+
   final set = await commands.set('test', 'foobar', expire: Duration(seconds: 10));
   print(set);
 
@@ -28,6 +30,8 @@ void main(List<String> args) async {
 
   final del = await commands.del(['test']);
   print(del);
+
+  await commands.flushAll();
 
   server.close();
 }
