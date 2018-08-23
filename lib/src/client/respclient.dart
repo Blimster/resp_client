@@ -29,4 +29,15 @@ class RespClient {
     _connection.outputSink.write(data.serialize());
     return _deserializeRespType(_streamReader);
   }
+
+  ///
+  /// Writes a RESP array of bulk strings to the [outputSink] of the underlying server connection and reads back the RESP type of the response using the
+  /// [inputStream] of the underlying server connection.
+  ///
+  /// All elements of [elements] are converted to bulk strings by using to Object.toString().
+  ///
+  Future<RespType> writeArrayOfBulk(List<Object> elements) async {
+    return writeType(RespArray(elements.map((e) => RespBulkString(e != null ? '$e' : null)).toList(growable: false)));
+  }
+
 }

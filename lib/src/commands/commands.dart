@@ -17,7 +17,7 @@ class RespCommands {
   }
 
   Future<RespType> _execCmd(List<Object> elements) async {
-    return client.writeType(RespArray(elements.map((e) => RespBulkString(e != null ? '$e' : null)).toList(growable: false)));
+    return client.writeArrayOfBulk(elements);
   }
 
   String _getBulkString(RespType type) {
@@ -134,4 +134,15 @@ class RespCommands {
     return null;
   }
 
+  ///
+  /// Sends the authentication password to the server. Returns true, if the password matches, otherwise false.
+  ///
+  Future<bool> auth(String password) async {
+    final result = await _execCmd(['AUTH', password]);
+    if (result is RespSimpleString) {
+      return result.payload == 'OK';
+    } else {
+      return false;
+    }
+  }
 }
