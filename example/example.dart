@@ -31,6 +31,41 @@ void main(List<String> args) async {
   final del = await commands.del(['test']);
   print(del);
 
+  print('--- hash operations ---');
+
+  final hset1 = await commands.hset('hsh', 'f1', 'foo');
+  print(hset1);
+
+  final hset2 = await commands.hset('hsh', 'f2', 'bar');
+  print(hset2);
+
+  final hsetnx1 = await commands.hsetnx('hsh', 'f3', 'baz');
+  print(hsetnx1);
+
+  final hsetnx2 = await commands.hsetnx('hsh', 'f3', 'baz');
+  print(hsetnx2);
+
+  final hmset = await commands.hmset('hsh', { 'f4': 'v1', 'f5': 'v2' });
+  print(hmset);
+
+  final hexists = await commands.hexists('hsh', 'f1');
+  print(hexists);
+
+  print(await commands.hget('hsh', 'f2'));
+
+  print(await commands.hmget('hsh', ['f1', 'f2']));
+
+  print(await commands.hgetall('hsh'));
+
+  print(await commands.hkeys('hsh'));
+
+  print(await commands.hvals('hsh'));
+
+  print(await commands.hdel('hsh', ['f1', 'f3']));
+
+  print(await commands.hgetall('hsh'));
+
+
   await commands.flushAll();
 
   server.close();
