@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4
+
+- Added hash commands (HSET, HGET, etc.)
+
+## 0.1.3
+
+- Added AUTH command
+
 ## 0.1.2
 
 - Bugfix: Fixed handling of null bulk strings and arrays in deserialization.
