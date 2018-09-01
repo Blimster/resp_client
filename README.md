@@ -4,9 +4,9 @@ A RESP (REdis Serialization Protocol) client for Dart. This package contains 2 l
 # 3 Building blocks
 
 There 3 fundamental building block:
-* ```RespServerConnection``` - A connection to a RESP server
-* ```RespClient``` - A RESP client connected to a RESP server implementing the request/response model and the RESP types
-* ```RespCommands``` - Easy to use API of the Redis commands
+* **RespServerConnection** - A connection to a RESP server
+* **RespClient** - A RESP client connected to a RESP server implementing the request/response model and the RESP types
+* **RespCommands** - Easy to use API of the Redis commands
 
 # Usage
 
