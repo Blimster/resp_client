@@ -19,13 +19,13 @@ import 'package:resp_client/resp_commands.dart';
 
 void main(List<String> args) async {
   // create a RESP server connection using sockets
-  final RespServerConnection server = await connectSocket('localhost');
+  final server = await connectSocket('localhost');
 
   // create a RESP client using the server connection
-  RespClient client = RespClient(server);
+  final client = RespClient(server);
 
   // create RESP commands using the client
-  RespCommands commands = RespCommands(client);
+  final commands = RespCommands(client);
 
   // ... execute Redis commands
 
@@ -49,10 +49,10 @@ void main(List<String> args) async {
   // ... setup connection and client
   
   // create RESP commands using the client
-  RespCommands commands = RespCommands(client);
+  final commands = RespCommands(client);
 
   // execute a command
-  final String value = await commands.get('someKey');
+  final value = await commands.get('someKey');
 
   // ... close connection
 }
@@ -72,8 +72,11 @@ void main(List<String> args) async {
 
   // ... setup connection and client
   
-  // execute a command
-  final RespType result = await client.writeType(RespArray([RespBulkString('GET'), RespBulkString('someKey')]));
+  // execute a command...
+  final RespType result1 = await client.writeType(RespArray([RespBulkString('GET'), RespBulkString('someKey')]));
+
+  // ...or shorter
+  final RespType result2 = await client.writeArrayOfBulk(['GET', 'someKey']);
 
   // ... close connection
 }

@@ -3,13 +3,13 @@ import 'package:resp_client/resp_commands.dart';
 
 void main(List<String> args) async {
   // create a RESP server connection using sockets
-  final RespServerConnection server = await connectSocket('localhost');
+  final server = await connectSocket('localhost');
 
   // create a RESP client using the server connection
-  RespClient client = RespClient(server);
+  final client = RespClient(server);
 
   // create RESP commands using the client
-  RespCommands commands = RespCommands(client);
+  final commands = RespCommands(client);
 
   final clientList = await commands.clientList();
   print(clientList);
