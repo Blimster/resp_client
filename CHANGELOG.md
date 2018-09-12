@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.5
+
+- Added list commands (LPUSH, LPOP, etc.)
+
 ## 0.1.4
 
 - Added hash commands (HSET, HGET, etc.)

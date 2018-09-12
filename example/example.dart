@@ -45,7 +45,7 @@ void main(List<String> args) async {
   final hsetnx2 = await commands.hsetnx('hsh', 'f3', 'baz');
   print(hsetnx2);
 
-  final hmset = await commands.hmset('hsh', { 'f4': 'v1', 'f5': 'v2' });
+  final hmset = await commands.hmset('hsh', {'f4': 'v1', 'f5': 'v2'});
   print(hmset);
 
   final hexists = await commands.hexists('hsh', 'f1');
@@ -65,6 +65,23 @@ void main(List<String> args) async {
 
   print(await commands.hgetall('hsh'));
 
+  print(await commands.blpop(['keys'], 1));
+  print(await commands.brpop(['keys'], 1));
+  print(await commands.brpoplpush('source', 'destination', 1));
+  print(await commands.lindex('key', 0));
+  print(await commands.linsert('key', InsertMode.before, 'pivot', 'value'));
+  print(await commands.llen('key'));
+  print(await commands.lpop('key'));
+  print(await commands.lpush('key', ['value']));
+  print(await commands.lpushx('key', ['value']));
+  print(await commands.lrange('key', 1, 2));
+  print(await commands.lrem('key', 1, 'value'));
+  print(await commands.lset('key', 1, 'value'));
+  await commands.ltrim('key', 1, 2);
+  print(await commands.rpop('key'));
+  print(await commands.rpoplpush('source', 'destination'));
+  print(await commands.rpush('key', ['values']));
+  print(await commands.rpushx('key', ['values']));
 
   await commands.flushAll();
 
