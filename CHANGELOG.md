@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.6
+
+- Bugfix: RespClient hangs when pipelining commands
+
 ## 0.1.5
 
 - Added list commands (LPUSH, LPOP, etc.)

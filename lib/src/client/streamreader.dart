@@ -2,7 +2,7 @@ part of resp_client;
 
 class _StreamReader {
   final buffer = Queue<int>();
-  final listeners = Queue<StreamController<void>>();
+  final controller = StreamController<void>.broadcast();
 
   _StreamReader(Stream<List<int>> stream) {
     stream.listen(onData);
@@ -10,18 +10,13 @@ class _StreamReader {
 
   void onData(List<int> data) {
     buffer.addAll(data);
-    if (listeners.isNotEmpty) {
-      listeners.first.add(null);
-    }
+    controller.add(null);
   }
 
   Future<List<int>> takeCount(int count) {
-    final listener = StreamController<int>();
-    listeners.add(listener);
     final completer = Completer<List<int>>();
-
     final buffer = List<int>();
-    final subscription = listener.stream.listen(null);
+    final subscription = controller.stream.listen(null);
 
     subscription.onData((_) {
       while (buffer.length < count && this.buffer.isNotEmpty) {
@@ -29,11 +24,10 @@ class _StreamReader {
       }
       if (buffer.length == count) {
         subscription.cancel();
-        listeners.remove(listener);
         completer.complete(buffer);
       }
     });
-    listener.add(null);
+    controller.add(null);
 
     return completer.future;
   }
@@ -44,23 +38,20 @@ class _StreamReader {
   }
 
   Future<List<int>> takeWhile(bool predicate(int)) {
-    final listener = StreamController<int>();
-    listeners.add(listener);
     final completer = Completer<List<int>>();
-
     final buffer = List<int>();
-    final subscription = listener.stream.listen(null);
+    final subscription = controller.stream.listen(null);
+
     subscription.onData((_) {
       while (this.buffer.isNotEmpty && predicate(this.buffer.first)) {
         buffer.add(this.buffer.removeFirst());
       }
       if (this.buffer.isNotEmpty && !predicate(this.buffer.first)) {
         subscription.cancel();
-        listeners.remove(listener);
         completer.complete(buffer);
       }
     });
-    listener.add(null);
+    controller.add(null);
 
     return completer.future;
   }

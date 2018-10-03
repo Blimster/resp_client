@@ -2,6 +2,7 @@ library resp_client;
 
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 import 'dart:io';
 
 part 'package:resp_client/src/client/respclient.dart';

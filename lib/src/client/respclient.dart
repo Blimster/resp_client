@@ -5,7 +5,7 @@ part of resp_client;
 /// server. The [inputStream] is used by [RespClient] to read responses from the server.
 ///
 abstract class RespServerConnection {
-  IOSink get outputSink;
+  StreamSink<List<int>> get outputSink;
 
   Stream<List<int>> get inputStream;
 
@@ -18,6 +18,8 @@ abstract class RespServerConnection {
 class RespClient {
   final RespServerConnection _connection;
   final _StreamReader _streamReader;
+  final Queue<Completer> _pendingResponses = Queue();
+  bool _isProccessingResponse = false;
 
   RespClient(this._connection) : _streamReader = _StreamReader(_connection.inputStream);
 
@@ -26,8 +28,11 @@ class RespClient {
   /// [inputStream] of the underlying server connection.
   ///
   Future<RespType> writeType(RespType data) {
-    _connection.outputSink.write(data.serialize());
-    return _deserializeRespType(_streamReader);
+    final Completer<RespType> completer = new Completer();
+    _pendingResponses.add(completer);
+    _connection.outputSink.add(utf8.encode(data.serialize()));
+    _processResponse(false);
+    return completer.future;
   }
 
   ///
@@ -40,4 +45,18 @@ class RespClient {
     return writeType(RespArray(elements.map((e) => RespBulkString(e != null ? '$e' : null)).toList(growable: false)));
   }
 
+  void _processResponse(bool selfCall) {
+    if (_isProccessingResponse == false || selfCall) {
+      if (_pendingResponses.isNotEmpty) {
+        _isProccessingResponse = true;
+        final c = _pendingResponses.removeFirst();
+        _deserializeRespType(_streamReader).then((response) {
+          c.complete(response);
+          _processResponse(true);
+        });
+      } else {
+        _isProccessingResponse = false;
+      }
+    }
+  }
 }
