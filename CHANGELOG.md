@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7
+
+- Added SCAN command
+
 ## 0.1.6
 
 - Bugfix: RespClient hangs when pipelining commands

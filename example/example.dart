@@ -83,6 +83,8 @@ void main(List<String> args) async {
   print(await commands.rpush('key', ['values']));
   print(await commands.rpushx('key', ['values']));
 
+  print(await commands.scan(0));
+
   await commands.flushAll();
 
   server.close();

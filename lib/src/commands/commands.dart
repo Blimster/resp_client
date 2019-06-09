@@ -589,4 +589,40 @@ class RespCommands {
   Future<int> rpushx(String key, List<Object> values) async {
     return _getInteger(await _execCmd(_mergeLists(['RPUSHX', key], values)));
   }
+
+  ///
+  /// The SCAN command and the closely related commands SSCAN, HSCAN and ZSCAN
+  /// are used in order to incrementally iterate over a collection of elements.
+  ///
+  /// See https://redis.io/commands/scan for more detailed documentation.
+  ///
+  Future<ScanResult> scan(int cursor, {String pattern, int count}) async {
+    final result = _getArray(await _execCmd([
+      'SCAN',
+      '$cursor',
+      if (pattern != null) ...['PATTERN', pattern],
+      if (count != null) ...['COUNT', count],
+    ]));
+    return ScanResult._(result);
+  }
+}
+
+///
+/// The result of a scan operation.
+///
+class ScanResult {
+  final int cursor;
+  final List<String> keys;
+
+  ScanResult._(List<RespType> result)
+      : cursor = int.parse((result[0] as RespBulkString).payload),
+        keys = (result[1] as RespArray).payload.cast<RespBulkString>().map((e) => e.payload).toList(growable: false);
+
+  ///
+  /// Returns true, if there more elements (cursor != 0).
+  ///
+  bool get hasMoreElements => cursor != 0;
+
+  @override
+  String toString() => 'ScanResult{cursor: $cursor, keys: $keys}';
 }
