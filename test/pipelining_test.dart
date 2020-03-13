@@ -28,6 +28,14 @@ void main() {
     commands.pexpire('foo', Duration(seconds: 10));
     await commands.set('foo', 'bar');
 
-    //connection.assertAllResponsesSent();
+    connection.assertAllResponsesSent();
   });
+
+//  test('correct error handling', () async {
+//    connection.responseOnRequest(RespArray([RespBulkString('SET'), RespBulkString('foo'), RespBulkString('bar')]).serialize(), StateError('test'));
+//    connection.responseOnRequest(RespArray([RespBulkString('PEXPIRE'), RespBulkString('foo'), RespBulkString('10000')]).serialize(), ':1\r\n');
+//
+//    await commands.set('foo', 'bar');
+//    await commands.pexpire('foo', Duration(seconds: 10));
+//  });
 }

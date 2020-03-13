@@ -14,11 +14,15 @@ class TestConnection implements RespServerConnection {
       final decoded = utf8.decode(data);
       _buffer = _buffer + decoded;
       if (_expectations.isNotEmpty) {
-        if (_buffer.startsWith(_expectations.first.request)) {
-          _buffer = _buffer.substring(_expectations.first.request.length);
-          _out.add(utf8.encode(_expectations.first.response));
-          _expectations.removeAt(0);
+        if (_expectations.first.response is String) {
+          if (_buffer.startsWith(_expectations.first.request)) {
+            _buffer = _buffer.substring(_expectations.first.request.length);
+            _out.add(utf8.encode(_expectations.first.response));
+          }
+        } else {
+          _out.addError(_expectations.first.response);
         }
+        _expectations.removeAt(0);
       }
     });
   }
@@ -36,21 +40,20 @@ class TestConnection implements RespServerConnection {
     return Future.value(null);
   }
 
-  void responseOnRequest(String request, String response) {
+  void responseOnRequest(String request, Object response) {
     _expectations.add(_RequestResponse(request, response));
   }
 
   void assertAllResponsesSent() {
-    if(_expectations.isNotEmpty) {
+    if (_expectations.isNotEmpty) {
       throw AssertionError('expected no more pending responses, but found ${_expectations.length}!');
     }
   }
-
 }
 
 class _RequestResponse {
   final String request;
-  final String response;
+  final Object response;
 
   _RequestResponse(this.request, this.response);
 }

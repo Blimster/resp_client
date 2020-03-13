@@ -28,11 +28,19 @@ class RespClient {
   /// [inputStream] of the underlying server connection.
   ///
   Future<RespType> writeType(RespType data) {
-    final Completer<RespType> completer = new Completer();
+    final Completer<RespType> completer = Completer();
     _pendingResponses.add(completer);
     _connection.outputSink.add(utf8.encode(data.serialize()));
     _processResponse(false);
     return completer.future;
+  }
+
+  Stream<RespType> subscribe() {
+    final controller = StreamController<RespType>();
+    _deserializeRespType(_streamReader).then((response) {
+      controller.add(response);
+    });
+    return controller.stream;
   }
 
   ///

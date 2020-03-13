@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7+1
+
+- Improved pub.dev score˚
+
 ## 0.1.7
 
 - Added SCAN command

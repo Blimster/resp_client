@@ -19,19 +19,6 @@ class RespCommands {
 
   RespCommands(this.client);
 
-  List<String> _merge(String first, List<String> additionals) {
-    final result = [first];
-    result.addAll(additionals);
-    return result;
-  }
-
-  List<String> _mergeLists(List<Object> first, List<Object> additionals) {
-    final result = <String>[];
-    result.addAll(first?.map((e) => e?.toString()));
-    result.addAll(additionals?.map((e) => e?.toString()));
-    return result;
-  }
-
   Future<RespType> _execCmd(List<Object> elements) async {
     return client.writeArrayOfBulk(elements);
   }
@@ -121,14 +108,14 @@ class RespCommands {
   /// Removes the value for the given [keys]. Returns the number of deleted values.
   ///
   Future<int> del(List<String> keys) async {
-    return _getInteger(await _execCmd(_merge('DEL', keys)));
+    return _getInteger(await _execCmd(['DEL', ...keys]));
   }
 
   ///
   /// Returns the number of values exists for the given [keys]
   ///
   Future<int> exists(List<String> keys) async {
-    return _getInteger(await _execCmd(_merge('EXISTS', keys)));
+    return _getInteger(await _execCmd(['EXISTS', ...keys]));
   }
 
   ///
@@ -220,7 +207,7 @@ class RespCommands {
       params.add(v);
     });
 
-    final result = _getSimpleString(await _execCmd(_mergeLists(['HMSET', key], params)));
+    final result = _getSimpleString(await _execCmd(['HMSET', key, ...params]));
     return result == 'OK';
   }
 
@@ -262,7 +249,7 @@ class RespCommands {
   /// A map of values associated with the given fields, in the same order as they are requested.
   ///
   Future<Map<String, String>> hmget(String key, List<String> fields) async {
-    final result = _getArray(await _execCmd(_mergeLists(['HMGET', key], fields)));
+    final result = _getArray(await _execCmd(['HMGET', key, ...fields]));
 
     final hash = <String, String>{};
     for (int i = 0; i < fields.length; i++) {
@@ -280,7 +267,7 @@ class RespCommands {
   /// existing fields.
   ///
   Future<int> hdel(String key, List<String> fields) async {
-    return _getInteger(await _execCmd(_mergeLists(['HDEL', key], fields)));
+    return _getInteger(await _execCmd(['HDEL', key, ...fields]));
   }
 
   ///
@@ -318,7 +305,7 @@ class RespCommands {
   /// See https://redis.io/commands/blpop
   ///
   Future<List<String>> blpop(List<String> keys, int timeout) async {
-    final result = _getArray(await _execCmd(_merge('BLPOP', _mergeLists(keys, [timeout]))));
+    final result = _getArray(await _execCmd(['BLPOP', ...keys, timeout]));
     return result?.map((e) => _getBulkString(e))?.toList(growable: false);
   }
 
@@ -342,7 +329,7 @@ class RespCommands {
   /// popped element.
   ///
   Future<List<String>> brpop(List<String> keys, int timeout) async {
-    final result = _getArray(await _execCmd(_merge('BRPOP', _mergeLists(keys, [timeout]))));
+    final result = _getArray(await _execCmd(['BRPOP', ...keys, timeout]));
     return result?.map((e) => _getBulkString(e))?.toList(growable: false);
   }
 
@@ -430,7 +417,7 @@ class RespCommands {
   /// Returns the length of the list after the push operations.
   ///
   Future<int> lpush(String key, List<Object> values) async {
-    return _getInteger(await _execCmd(_mergeLists(['LPUSH', key], values)));
+    return _getInteger(await _execCmd(['LPUSH', key, ...values]));
   }
 
   ///
@@ -439,7 +426,7 @@ class RespCommands {
   /// will be performed when key does not yet exist.
   ///
   Future<int> lpushx(String key, List<Object> values) async {
-    return _getInteger(await _execCmd(_mergeLists(['LPUSHX', key], values)));
+    return _getInteger(await _execCmd(['LPUSHX', key, ...values]));
   }
 
   ///
@@ -576,7 +563,7 @@ class RespCommands {
   /// Returns the length of the list after the push operation.
   ///
   Future<int> rpush(String key, List<Object> values) async {
-    return _getInteger(await _execCmd(_mergeLists(['RPUSH', key], values)));
+    return _getInteger(await _execCmd(['RPUSH', key, ...values]));
   }
 
   ///
@@ -587,7 +574,7 @@ class RespCommands {
   /// Returns the length of the list after the push operation.
   ///
   Future<int> rpushx(String key, List<Object> values) async {
-    return _getInteger(await _execCmd(_mergeLists(['RPUSHX', key], values)));
+    return _getInteger(await _execCmd(['RPUSHX', key, ...values]));
   }
 
   ///
@@ -604,6 +591,38 @@ class RespCommands {
       if (count != null) ...['COUNT', count],
     ]));
     return ScanResult._(result);
+  }
+
+  ///
+  /// Posts a message to the given channel.
+  ///
+  /// Returns the number of clients that received the message.
+  ///
+  Future<int> publish(String channel, Object message) async {
+    return _getInteger(await _execCmd(['PUBLISH', channel, message]));
+  }
+
+  ///
+  /// Subscribes the client to the specified channels.
+  ///
+  /// Once the client enters the subscribed state it is not supposed to
+  /// issue any other commands, except for additional SUBSCRIBE,
+  /// PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
+  ///
+  Future<void> subscribe(List<String> channels) async {
+    _execCmd(['SUBSCRIBE', ...channels]);
+  }
+
+  ///
+  /// Unsubscribes the client from the given channels, or from all of them
+  /// if none is given.
+  ///
+  /// When no channels are specified, the client is unsubscribed from all
+  /// the previously subscribed channels. In this case, a message for every
+  /// unsubscribed channel will be sent to the client.
+  ///
+  Future<void> unsubscribe(Iterable<String> channels) async {
+    await _execCmd(['UNSUBSCRIBE', ...channels]);
   }
 }
 
