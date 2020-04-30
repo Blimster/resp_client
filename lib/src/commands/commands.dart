@@ -233,7 +233,7 @@ class RespCommands {
     final result = _getArray(await _execCmd(['HGETALL', key]));
 
     final map = <String, String>{};
-    for (int i = 0; i < result.length; i += 2) {
+    for (var i = 0; i < result.length; i += 2) {
       map[_getBulkString(result[i])] = _getBulkString(result[i + 1]);
     }
     return map;
@@ -252,7 +252,7 @@ class RespCommands {
     final result = _getArray(await _execCmd(['HMGET', key, ...fields]));
 
     final hash = <String, String>{};
-    for (int i = 0; i < fields.length; i++) {
+    for (var i = 0; i < fields.length; i++) {
       hash[fields[i]] = _getBulkString(result[i]);
     }
     return hash;
@@ -610,7 +610,7 @@ class RespCommands {
   /// PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   ///
   Future<void> subscribe(List<String> channels) async {
-    _execCmd(['SUBSCRIBE', ...channels]);
+    return _execCmd(['SUBSCRIBE', ...channels]);
   }
 
   ///

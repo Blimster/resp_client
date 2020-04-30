@@ -1,5 +1,10 @@
 # Changelog
 
+## xxx
+
+- Added pedantic linter rules
+- Enabled strict type checks
+
 ## 0.1.7+1
 
 - Improved pub.dev score˚

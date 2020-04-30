@@ -20,12 +20,15 @@ void main() {
   });
 
   test('all pipelined request complete', () async {
-    connection.responseOnRequest(RespArray([RespBulkString('SET'), RespBulkString('foo'), RespBulkString('bar')]).serialize(), '+OK\r\n');
-    connection.responseOnRequest(RespArray([RespBulkString('PEXPIRE'), RespBulkString('foo'), RespBulkString('10000')]).serialize(), ':1\r\n');
-    connection.responseOnRequest(RespArray([RespBulkString('SET'), RespBulkString('foo'), RespBulkString('bar')]).serialize(), '+OK\r\n');
+    connection.responseOnRequest(
+        RespArray([RespBulkString('SET'), RespBulkString('foo'), RespBulkString('bar')]).serialize(), '+OK\r\n');
+    connection.responseOnRequest(
+        RespArray([RespBulkString('PEXPIRE'), RespBulkString('foo'), RespBulkString('10000')]).serialize(), ':1\r\n');
+    connection.responseOnRequest(
+        RespArray([RespBulkString('SET'), RespBulkString('foo'), RespBulkString('bar')]).serialize(), '+OK\r\n');
 
     await commands.set('foo', 'bar');
-    commands.pexpire('foo', Duration(seconds: 10));
+    await commands.pexpire('foo', Duration(seconds: 10));
     await commands.set('foo', 'bar');
 
     connection.assertAllResponsesSent();

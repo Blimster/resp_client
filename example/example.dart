@@ -87,5 +87,5 @@ void main(List<String> args) async {
 
   await commands.flushAll();
 
-  server.close();
+  await server.close();
 }

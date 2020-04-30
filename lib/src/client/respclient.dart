@@ -28,7 +28,7 @@ class RespClient {
   /// [inputStream] of the underlying server connection.
   ///
   Future<RespType> writeType(RespType data) {
-    final Completer<RespType> completer = Completer();
+    final completer = Completer<RespType>();
     _pendingResponses.add(completer);
     _connection.outputSink.add(utf8.encode(data.serialize()));
     _processResponse(false);

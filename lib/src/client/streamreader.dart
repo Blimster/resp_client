@@ -15,7 +15,7 @@ class _StreamReader {
 
   Future<List<int>> takeCount(int count) {
     final completer = Completer<List<int>>();
-    final buffer = List<int>();
+    final buffer = <int>[];
     final subscription = controller.stream.listen(null);
 
     subscription.onData((_) {
@@ -39,7 +39,7 @@ class _StreamReader {
 
   Future<List<int>> takeWhile(bool Function(int) predicate) {
     final completer = Completer<List<int>>();
-    final buffer = List<int>();
+    final buffer = <int>[];
     final subscription = controller.stream.listen(null);
 
     subscription.onData((_) {

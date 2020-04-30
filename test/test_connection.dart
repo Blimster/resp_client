@@ -7,7 +7,7 @@ class TestConnection implements RespServerConnection {
   final StreamController<List<int>> _in = StreamController<List<int>>();
   final StreamController<List<int>> _out = StreamController<List<int>>();
   String _buffer = '';
-  List<_RequestResponse> _expectations = [];
+  final _expectations = <_RequestResponse>[];
 
   TestConnection() {
     _in.stream.listen((List<int> data) {
@@ -17,7 +17,7 @@ class TestConnection implements RespServerConnection {
         if (_expectations.first.response is String) {
           if (_buffer.startsWith(_expectations.first.request)) {
             _buffer = _buffer.substring(_expectations.first.request.length);
-            _out.add(utf8.encode(_expectations.first.response));
+            _out.add(utf8.encode(_expectations.first.response as String));
           }
         } else {
           _out.addError(_expectations.first.response);
