@@ -1,6 +1,6 @@
 # Changelog
 
-## xxx
+## xxx (add this to pubspec.yaml)
 
 - Added pedantic linter rules
 - Enabled strict type checks
