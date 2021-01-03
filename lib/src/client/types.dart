@@ -7,9 +7,11 @@ final String suffix = '\r\n';
 ///
 abstract class RespType<P> {
   final String prefix;
-  final P payload;
+  final P? _payload;
 
-  const RespType(this.prefix, this.payload);
+  const RespType(this.prefix, this._payload);
+
+  P get payload => _payload as P;
 
   String serialize() {
     return '$prefix$payload$suffix';
@@ -45,15 +47,16 @@ class RespInteger extends RespType<int> {
 ///
 /// Implementation of a RESP bulk string.
 ///
-class RespBulkString extends RespType<String> {
+class RespBulkString extends RespType<String?> {
   static final nullString = '\$-1' + suffix;
 
-  const RespBulkString(String payload) : super('\$', payload);
+  const RespBulkString(String? payload) : super('\$', payload);
 
   @override
   String serialize() {
-    if (payload != null) {
-      return '$prefix${payload.length}$suffix$payload$suffix';
+    final pl = payload;
+    if (pl != null) {
+      return '$prefix${pl.length}$suffix$pl$suffix';
     }
     return nullString;
   }
@@ -62,15 +65,16 @@ class RespBulkString extends RespType<String> {
 ///
 /// Implementation of a RESP array.
 ///
-class RespArray extends RespType<List<RespType>> {
+class RespArray extends RespType<List<RespType>?> {
   static final nullArray = '\*-1' + suffix;
 
-  const RespArray(List<RespType> payload) : super('*', payload);
+  const RespArray(List<RespType>? payload) : super('*', payload);
 
   @override
   String serialize() {
-    if (payload != null) {
-      return '$prefix${payload.length}$suffix${payload.map((e) => e.serialize()).join('')}$suffix';
+    final pl = payload;
+    if (pl != null) {
+      return '$prefix${pl.length}$suffix${pl.map((e) => e.serialize()).join('')}$suffix';
     }
     return nullArray;
   }

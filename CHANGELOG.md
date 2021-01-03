@@ -1,13 +1,14 @@
 # Changelog
 
-## xxx (add this to pubspec.yaml)
+## 1.0.0-nullsafety.0
 
+- BREAKING CHANGE: migrated to null safety
 - Added pedantic linter rules
 - Enabled strict type checks
 
 ## 0.1.7+1
 
-- Improved pub.dev score˚
+- Improved pub.dev score
 
 ## 0.1.7
 

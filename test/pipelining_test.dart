@@ -5,9 +5,9 @@ import 'package:test/test.dart';
 import 'test_connection.dart';
 
 void main() {
-  TestConnection connection;
-  RespClient client;
-  RespCommands commands;
+  late TestConnection connection;
+  late RespClient client;
+  late RespCommands commands;
 
   setUp(() {
     connection = TestConnection();

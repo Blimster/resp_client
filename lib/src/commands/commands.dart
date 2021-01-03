@@ -23,7 +23,7 @@ class RespCommands {
     return client.writeArrayOfBulk(elements);
   }
 
-  String _getBulkString(RespType type) {
+  String? _getBulkString(RespType type) {
     if (type is RespBulkString) {
       return type.payload;
     } else if (type is RespArray && type.payload == null) {
@@ -60,7 +60,7 @@ class RespCommands {
     }
   }
 
-  List<RespType> _getArray(RespType type) {
+  List<RespType>? _getArray(RespType type) {
     if (type is RespArray) {
       return type.payload;
     } else if (type is RespError) {
@@ -74,13 +74,17 @@ class RespCommands {
   ///
   Future<List<String>> clientList() async {
     final result = await _execCmd(['CLIENT', 'LIST']);
-    return _getBulkString(result).split('\n').where((e) => e != null && e.isNotEmpty).toList(growable: false);
+    final bulkString = _getBulkString(result);
+    if (bulkString != null) {
+      return bulkString.split('\n').where((e) => e.isNotEmpty).toList(growable: false);
+    }
+    return [];
   }
 
   ///
   /// Sets a value for the given key. Returns [true], if the value was successfully set. Otherwise, [false] is returned.
   ///
-  Future<bool> set(String key, Object value, {Duration expire, SetMode mode}) async {
+  Future<bool> set(String key, Object value, {Duration? expire, SetMode? mode}) async {
     final cmd = ['SET', key, value];
 
     if (expire != null) {
@@ -100,7 +104,7 @@ class RespCommands {
   ///
   /// Returns the value for the given [key]. If no value if present for the key, [null] is returned.
   ///
-  Future<String> get(String key) async {
+  Future<String?> get(String key) async {
     return _getBulkString(await _execCmd(['GET', key]));
   }
 
@@ -217,7 +221,7 @@ class RespCommands {
   /// The value associated with field, or nil when field is not present in the hash or key
   /// does not exist.
   ///
-  Future<String> hget(String key, String field) async {
+  Future<String?> hget(String key, String field) async {
     return _getBulkString(await _execCmd(['HGET', key, field]));
   }
 
@@ -229,14 +233,21 @@ class RespCommands {
   /// Map of fields and their values stored in the hash, or an empty list when key does
   /// not exist.
   ///
-  Future<Map<String, String>> hgetall(String key) async {
+  Future<Map<String, String?>> hgetall(String key) async {
     final result = _getArray(await _execCmd(['HGETALL', key]));
 
-    final map = <String, String>{};
-    for (var i = 0; i < result.length; i += 2) {
-      map[_getBulkString(result[i])] = _getBulkString(result[i + 1]);
+    if (result != null) {
+      final map = <String, String?>{};
+      for (var i = 0; i < result.length; i += 2) {
+        final key = _getBulkString(result[i]);
+        final value = _getBulkString(result[i + 1]);
+        if (key != null) {
+          map[key] = value;
+        }
+      }
+      return map;
     }
-    return map;
+    return {};
   }
 
   ///
@@ -248,14 +259,17 @@ class RespCommands {
   ///
   /// A map of values associated with the given fields, in the same order as they are requested.
   ///
-  Future<Map<String, String>> hmget(String key, List<String> fields) async {
+  Future<Map<String, String?>> hmget(String key, List<String> fields) async {
     final result = _getArray(await _execCmd(['HMGET', key, ...fields]));
 
-    final hash = <String, String>{};
-    for (var i = 0; i < fields.length; i++) {
-      hash[fields[i]] = _getBulkString(result[i]);
+    if (result != null) {
+      final hash = <String, String?>{};
+      for (var i = 0; i < fields.length; i++) {
+        hash[fields[i]] = _getBulkString(result[i]);
+      }
+      return hash;
     }
-    return hash;
+    return {};
   }
 
   ///
@@ -288,7 +302,10 @@ class RespCommands {
   ///
   Future<List<String>> hkeys(String key) async {
     final result = _getArray(await _execCmd(['HKEYS', key]));
-    return result?.map((e) => _getBulkString(e))?.toList(growable: false);
+    if (result != null) {
+      return result.map((e) => _getBulkString(e)!).toList(growable: false);
+    }
+    return [];
   }
 
   ///
@@ -296,17 +313,23 @@ class RespCommands {
   ///
   /// List of values in the hash, or an empty list when key does not exist.
   ///
-  Future<List<String>> hvals(String key) async {
+  Future<List<String?>> hvals(String key) async {
     final result = _getArray(await _execCmd(['HVALS', key]));
-    return result?.map((e) => _getBulkString(e))?.toList(growable: false);
+    if (result != null) {
+      return result.map((e) => _getBulkString(e)).toList(growable: false);
+    }
+    return [];
   }
 
   ///
   /// See https://redis.io/commands/blpop
   ///
-  Future<List<String>> blpop(List<String> keys, int timeout) async {
+  Future<List<String?>> blpop(List<String> keys, int timeout) async {
     final result = _getArray(await _execCmd(['BLPOP', ...keys, timeout]));
-    return result?.map((e) => _getBulkString(e))?.toList(growable: false);
+    if (result != null) {
+      return result.map((e) => _getBulkString(e)).toList(growable: false);
+    }
+    return [];
   }
 
   ///
@@ -328,9 +351,12 @@ class RespCommands {
   /// where an element was popped and the second element being the value of the
   /// popped element.
   ///
-  Future<List<String>> brpop(List<String> keys, int timeout) async {
+  Future<List<String?>> brpop(List<String> keys, int timeout) async {
     final result = _getArray(await _execCmd(['BRPOP', ...keys, timeout]));
-    return result?.map((e) => _getBulkString(e))?.toList(growable: false);
+    if (result != null) {
+      return result.map((e) => _getBulkString(e)).toList(growable: false);
+    }
+    return [];
   }
 
   ///
@@ -346,7 +372,7 @@ class RespCommands {
   /// Returns the element being popped from source and pushed to destination.
   /// If timeout is reached, a Null reply is returned.
   ///
-  Future<String> brpoplpush(String source, String destination, int timeout) async {
+  Future<String?> brpoplpush(String source, String destination, int timeout) async {
     return _getBulkString(await _execCmd(['BRPOPLPUSH', source, destination, timeout]));
   }
 
@@ -361,7 +387,7 @@ class RespCommands {
   ///
   /// Returns the requested element, or nil when index is out of range.
   ///
-  Future<String> lindex(String key, int index) async {
+  Future<String?> lindex(String key, int index) async {
     return _getBulkString(await _execCmd(['LINDEX', key, index]));
   }
 
@@ -378,7 +404,7 @@ class RespCommands {
   /// when the value pivot was not found.
   ///
   Future<int> linsert(String key, InsertMode insertMode, Object pivot, Object value) async {
-    return _getInteger(await _execCmd(['LINSERT', key, insertMode?._value, pivot, value]));
+    return _getInteger(await _execCmd(['LINSERT', key, insertMode._value, pivot, value]));
   }
 
   ///
@@ -397,7 +423,7 @@ class RespCommands {
   ///
   /// Returns the value of the first element, or nil when key does not exist.
   ///
-  Future<String> lpop(String key) async {
+  Future<String?> lpop(String key) async {
     return _getBulkString(await _execCmd(['LPOP', key]));
   }
 
@@ -450,9 +476,12 @@ class RespCommands {
   ///
   /// Returns list of elements in the specified range.
   ///
-  Future<List<String>> lrange(String key, int start, int stop) async {
+  Future<List<String?>> lrange(String key, int start, int stop) async {
     final result = _getArray(await _execCmd(['LRANGE', key, start, stop]));
-    return result?.map((e) => _getBulkString(e))?.toList(growable: false);
+    if (result != null) {
+      return result.map((e) => _getBulkString(e)).toList(growable: false);
+    }
+    return [];
   }
 
   ///
@@ -525,7 +554,7 @@ class RespCommands {
   ///
   /// Returns the value of the last element, or nil when key does not exist.
   ///
-  Future<String> rpop(String key) async {
+  Future<String?> rpop(String key) async {
     return _getBulkString(await _execCmd(['RPOP', key]));
   }
 
@@ -543,7 +572,7 @@ class RespCommands {
   ///
   /// Returns the element being popped and pushed.
   ///
-  Future<String> rpoplpush(String source, String destination) async {
+  Future<String?> rpoplpush(String source, String destination) async {
     return _getBulkString(await _execCmd(['RPOPLPUSH', source, destination]));
   }
 
@@ -583,7 +612,7 @@ class RespCommands {
   ///
   /// See https://redis.io/commands/scan for more detailed documentation.
   ///
-  Future<ScanResult> scan(int cursor, {String pattern, int count}) async {
+  Future<ScanResult> scan(int cursor, {String? pattern, int? count}) async {
     final result = _getArray(await _execCmd([
       'SCAN',
       '$cursor',
@@ -610,7 +639,7 @@ class RespCommands {
   /// PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   ///
   Future<void> subscribe(List<String> channels) async {
-    return _execCmd(['SUBSCRIBE', ...channels]);
+    await _execCmd(['SUBSCRIBE', ...channels]);
   }
 
   ///
@@ -630,18 +659,30 @@ class RespCommands {
 /// The result of a scan operation.
 ///
 class ScanResult {
-  final int cursor;
-  final List<String> keys;
+  int _cursor = 0;
+  List<String> _keys = [];
 
-  ScanResult._(List<RespType> result)
-      : cursor = int.parse((result[0] as RespBulkString).payload),
-        keys = (result[1] as RespArray).payload.cast<RespBulkString>().map((e) => e.payload).toList(growable: false);
+  ScanResult._(List<RespType>? result) {
+    if (result != null && result.length == 2) {
+      final element1 = result[0] as RespBulkString;
+      final payload1 = element1.payload;
+      if (payload1 != null) {
+        _cursor = int.parse(payload1);
+      }
+
+      final element2 = result[1] as RespArray;
+      final payload2 = element2.payload;
+      if (payload2 != null) {
+        _keys = payload2.cast<RespBulkString>().map((e) => e.payload!).toList(growable: false);
+      }
+    }
+  }
 
   ///
   /// Returns true, if there more elements (cursor != 0).
   ///
-  bool get hasMoreElements => cursor != 0;
+  bool get hasMoreElements => _cursor != 0;
 
   @override
-  String toString() => 'ScanResult{cursor: $cursor, keys: $keys}';
+  String toString() => 'ScanResult{cursor: $_cursor, keys: $_keys}';
 }

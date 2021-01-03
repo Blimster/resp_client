@@ -25,7 +25,7 @@ class _SocketRespServer implements RespServerConnection {
 ///
 /// Creates a server connection using a socket.
 ///
-Future<RespServerConnection> connectSocket(String host, {int port = 6379, Duration timeout}) async {
+Future<RespServerConnection> connectSocket(String host, {int port = 6379, Duration? timeout}) async {
   final socket = await Socket.connect(host, port, timeout: timeout);
   return _SocketRespServer(socket);
 }
