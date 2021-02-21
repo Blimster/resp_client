@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0
+
+- Stable null safety release.
+
 ## 1.0.0-nullsafety.0
 
 - BREAKING CHANGE: migrated to null safety
