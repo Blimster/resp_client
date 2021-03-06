@@ -623,6 +623,81 @@ class RespCommands {
   }
 
   ///
+  /// Increments the number stored at key by one. If the
+  /// key does not exist, it is set to 0 before performing
+  /// the operation. An error is returned if the key
+  /// contains a value of the wrong type or contains a
+  /// string that can not be represented as integer. This
+  /// operation is limited to 64 bit signed integers.
+  ///
+  /// Note: this is a string operation because Redis does
+  /// not have a dedicated integer type. The string stored
+  /// at the key is interpreted as a base-10 64 bit signed
+  /// integer to execute the operation.
+  ///
+  /// Redis stores integers in their integer
+  /// representation, so for string values that actually
+  /// hold an integer, there is no overhead for storing the
+  /// string representation of the integer.
+  ///
+  /// Returns the value of key after the increment.
+  ///
+  Future<int> incr(String key) async {
+    return _getInteger(await _execCmd(['INCR', key]));
+  }
+
+  ///
+  /// Increments the number stored at key by increment. If
+  /// the key does not exist, it is set to 0 before
+  /// performing the operation. An error is returned if the
+  /// key contains a value of the wrong type or contains a
+  /// string that can not be represented as integer. This
+  /// operation is limited to 64 bit signed integers.
+  ///
+  /// See [incr] for extra information on increment/
+  /// decrement operations.
+  ///
+  /// Returns he value of key after the increment.
+  ///
+  Future<int> incrby(String key, int increment) async {
+    return _getInteger(await _execCmd(['INCRBY', key, '$increment']));
+  }
+
+  ///
+  /// Decrements the number stored at key by one. If the
+  /// key does not exist, it is set to 0 before performing
+  /// the operation. An error is returned if the key
+  /// contains a value of the wrong type or contains a
+  /// string that can not be represented as integer. This
+  /// operation is limited to 64 bit signed integers.
+  ///
+  /// See [incr] for extra information on increment/
+  /// decrement operations.
+  ///
+  /// Returns the value of key after the decrement.
+  ///
+  Future<int> decr(String key) async {
+    return _getInteger(await _execCmd(['DECR', key]));
+  }
+
+  ///
+  /// Decrements the number stored at key by decrement. If
+  /// the key does not exist, it is set to 0 before
+  /// performing the operation. An error is returned if the
+  /// key contains a value of the wrong type or contains a
+  /// string that can not be represented as integer. This
+  /// operation is limited to 64 bit signed integers.
+  ///
+  /// See [incr] for extra information on increment/
+  /// decrement operations.
+  ///
+  /// Returns the value of key after the decrement.
+  ///
+  Future<int> decrby(String key, int decrement) async {
+    return _getInteger(await _execCmd(['DECRBY', key, '$decrement']));
+  }
+
+  ///
   /// Posts a message to the given channel.
   ///
   /// Returns the number of clients that received the message.

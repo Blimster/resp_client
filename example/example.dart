@@ -85,6 +85,17 @@ void main(List<String> args) async {
 
   print(await commands.scan(0));
 
+  await commands.set('utf8', 'abcØØhehe');
+  print(await commands.get('utf8'));
+
+  await commands.set('incr', 1);
+  print(await commands.incr('incr'));
+  print(await commands.incrby('incr', 10));
+
+  await commands.set('decr', 20);
+  print(await commands.decr('decr'));
+  print(await commands.decrby('decr', 10));
+
   await commands.flushAll();
 
   await server.close();
