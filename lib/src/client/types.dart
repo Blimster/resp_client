@@ -80,28 +80,28 @@ Future<RespType> _deserializeRespType(_StreamReader _streamReader) async {
   final typePrefix = await _streamReader.takeOne();
   switch (typePrefix) {
     case 0x2b: // simple string
-      final payload = String.fromCharCodes(await _streamReader.takeWhile((data) => data != 0x0d));
+      final payload = utf8.decode(await _streamReader.takeWhile((data) => data != 0x0d));
       await _streamReader.takeCount(2);
       return RespSimpleString(payload);
     case 0x2d: // error
-      final payload = String.fromCharCodes(await _streamReader.takeWhile((data) => data != 0x0d));
+      final payload = utf8.decode(await _streamReader.takeWhile((data) => data != 0x0d));
       await _streamReader.takeCount(2);
       return RespError(payload);
     case 0x3a: // integer
-      final payload = int.parse(String.fromCharCodes(await _streamReader.takeWhile((data) => data != 0x0d)));
+      final payload = int.parse(utf8.decode(await _streamReader.takeWhile((data) => data != 0x0d)));
       await _streamReader.takeCount(2);
       return RespInteger(payload);
     case 0x24: // bulk string
-      final length = int.parse(String.fromCharCodes(await _streamReader.takeWhile((data) => data != 0x0d)));
+      final length = int.parse(utf8.decode(await _streamReader.takeWhile((data) => data != 0x0d)));
       await _streamReader.takeCount(2);
       if (length == -1) {
         return RespBulkString(null);
       }
-      final payload = String.fromCharCodes(await _streamReader.takeCount(length));
+      final payload = utf8.decode(await _streamReader.takeCount(length));
       await _streamReader.takeCount(2);
       return RespBulkString(payload);
     case 0x2a: // array
-      final count = int.parse(String.fromCharCodes(await _streamReader.takeWhile((data) => data != 0x0d)));
+      final count = int.parse(utf8.decode(await _streamReader.takeWhile((data) => data != 0x0d)));
       await _streamReader.takeCount(2);
       if (count == -1) {
         return RespArray(null);
