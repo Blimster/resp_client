@@ -1,9 +1,11 @@
 # Changelog
 
-## xxx (add this to pubspec.yaml)
+## 0.2.0
 
 - Added pedantic linter rules
 - Enabled strict type checks
+- Added `incr`, `incrby`, `decr`, `decrby` commands.
+- BREAKING CHANGE: responses from redis are now considered as UTF-8 encoded (`resp_client` already encodes commands as UTF-8).
 
 ## 0.1.7+1
 
