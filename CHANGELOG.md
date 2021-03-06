@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- Added `incr`, `incrby`, `decr`, `decrby` commands.
+- BREAKING CHANGE: responses from redis are now considered as UTF-8 encoded (`resp_client` already encodes commands as UTF-8). 
+
 ## 1.0.0
 
 - Stable null safety release.
