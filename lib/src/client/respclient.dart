@@ -50,7 +50,7 @@ class RespClient {
   /// All elements of [elements] are converted to bulk strings by using to Object.toString().
   ///
   Future<RespType> writeArrayOfBulk(List<Object> elements) async {
-    return writeType(RespArray(elements.map((e) => RespBulkString(e != null ? '$e' : null)).toList(growable: false)));
+    return writeType(RespArray(elements.map((e) => RespBulkString('$e')).toList(growable: false)));
   }
 
   void _processResponse(bool selfCall) {
