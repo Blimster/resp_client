@@ -83,8 +83,6 @@ void main(List<String> args) async {
   print(await commands.rpush('key', ['values']));
   print(await commands.rpushx('key', ['values']));
 
-  print(await commands.scan(0));
-
   await commands.set('utf8', 'abcØØhehe');
   print(await commands.get('utf8'));
 
@@ -95,6 +93,9 @@ void main(List<String> args) async {
   await commands.set('decr', 20);
   print(await commands.decr('decr'));
   print(await commands.decrby('decr', 10));
+
+  print(await commands.scan(0));
+  print(await commands.dbsize());
 
   await commands.flushAll();
 

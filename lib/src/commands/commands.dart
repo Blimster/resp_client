@@ -616,10 +616,55 @@ class RespCommands {
     final result = _getArray(await _execCmd([
       'SCAN',
       '$cursor',
-      if (pattern != null) ...['PATTERN', pattern],
+      if (pattern != null) ...['MATCH', pattern],
       if (count != null) ...['COUNT', count],
     ]));
     return ScanResult._(result);
+  }
+
+  ///
+  /// Return the number of keys in the currently-selected database.
+  ///
+  Future<int> dbsize() async {
+    return _getInteger(await _execCmd(['DBSIZE']));
+  }
+
+  ///
+  /// The INFO command returns information and statistics
+  /// about the server in a format that is simple to parse
+  /// by computers and easy to read by humans.
+  ///
+  /// The optional parameter can be used to select a
+  /// specific section of information:
+  /// server: General information about the Redis server
+  /// clients: Client connections section
+  /// memory: Memory consumption related information
+  /// persistence: RDB and AOF related information
+  /// stats: General statistics
+  /// replication: Master/replica replication information
+  /// cpu: CPU consumption statistics
+  /// commandstats: Redis command statistics
+  /// cluster: Redis Cluster section
+  /// modules: Modules section
+  /// keyspace: Database related statistics
+  /// modules: Module related sections
+  /// errorstats: Redis error statistics
+  ///
+  /// It can also take the following values:
+  /// all: Return all sections (excluding module generated ones)
+  /// default: Return only the default set of sections
+  /// everything: Includes all and modules
+  ///
+  /// When no parameter is provided, the default option is
+  /// assumed.
+  ///
+  /// Returns as a collection of text lines.
+  ///
+  /// Lines can contain a section name (starting with a
+  /// # character) or a property. All the properties are in
+  /// the form of field:value terminated by \r\n.
+  Future<String?> info([String? section]) async {
+    return _getBulkString(await _execCmd(['INFO', if (section != null) section]));
   }
 
   ///
