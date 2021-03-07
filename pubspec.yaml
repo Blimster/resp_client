@@ -1,6 +1,6 @@
 name: resp_client
 description: A RESP (REdis Serialization Protocol) client for Dart. It provides a low-level and high-level API to execute Redis commands.
-version: 1.1.0
+version: 1.1.1
 homepage: https://www.github.com/blimster/resp_client
 
 environment:

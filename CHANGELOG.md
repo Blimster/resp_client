@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1
+
+- Added `dbsize` and `info` commands.
+- Fixed UTF-8 decoding issue.
+- Fixed issue in command `scan` when using a pattern.
+- Add getters for `cursor` and `keys` to class `ScanResult`.
+
 ## 1.1.0
 
 - Added `incr`, `incrby`, `decr`, `decrby` commands.
