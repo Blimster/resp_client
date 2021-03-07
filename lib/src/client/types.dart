@@ -7,11 +7,9 @@ final String suffix = '\r\n';
 ///
 abstract class RespType<P> {
   final String prefix;
-  final P? _payload;
+  final P payload;
 
-  const RespType(this.prefix, this._payload);
-
-  P get payload => _payload as P;
+  const RespType(this.prefix, this.payload);
 
   String serialize() {
     return '$prefix$payload$suffix';
