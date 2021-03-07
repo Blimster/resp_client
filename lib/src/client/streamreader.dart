@@ -1,10 +1,10 @@
 part of resp_client;
 
-class _StreamReader {
+class StreamReader {
   final buffer = Queue<int>();
   final controller = StreamController<void>.broadcast();
 
-  _StreamReader(Stream<List<int>> stream) {
+  StreamReader(Stream<List<int>> stream) {
     stream.listen(onData);
   }
 
