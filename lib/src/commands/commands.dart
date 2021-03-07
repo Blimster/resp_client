@@ -753,6 +753,10 @@ class ScanResult {
     }
   }
 
+  int get cursor => _cursor;
+
+  List<String> get keys => _keys;
+
   ///
   /// Returns true, if there more elements (cursor != 0).
   ///
