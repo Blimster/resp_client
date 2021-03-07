@@ -17,11 +17,11 @@ abstract class RespServerConnection {
 ///
 class RespClient {
   final RespServerConnection _connection;
-  final _StreamReader _streamReader;
+  final StreamReader _streamReader;
   final Queue<Completer> _pendingResponses = Queue();
   bool _isProccessingResponse = false;
 
-  RespClient(this._connection) : _streamReader = _StreamReader(_connection.inputStream);
+  RespClient(this._connection) : _streamReader = StreamReader(_connection.inputStream);
 
   ///
   /// Writes a RESP type to the server using the [outputSink] of the underlying server connection and reads back the RESP type of the response using the
@@ -30,14 +30,14 @@ class RespClient {
   Future<RespType> writeType(RespType data) {
     final completer = Completer<RespType>();
     _pendingResponses.add(completer);
-    _connection.outputSink.add(utf8.encode(data.serialize()));
+    _connection.outputSink.add(data.serialize());
     _processResponse(false);
     return completer.future;
   }
 
   Stream<RespType> subscribe() {
     final controller = StreamController<RespType>();
-    _deserializeRespType(_streamReader).then((response) {
+    deserializeRespType(_streamReader).then((response) {
       controller.add(response);
     });
     return controller.stream;
@@ -58,7 +58,7 @@ class RespClient {
       if (_pendingResponses.isNotEmpty) {
         _isProccessingResponse = true;
         final c = _pendingResponses.removeFirst();
-        _deserializeRespType(_streamReader).then((response) {
+        deserializeRespType(_streamReader).then((response) {
           c.complete(response);
           _processResponse(true);
         });

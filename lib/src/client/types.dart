@@ -11,13 +11,13 @@ abstract class RespType<P> {
 
   const RespType(this.prefix, this.payload);
 
-  String serialize() {
-    return '$prefix$payload$suffix';
+  List<int> serialize() {
+    return utf8.encode('$prefix$payload$suffix');
   }
 
   @override
   String toString() {
-    return serialize();
+    return utf8.decode(serialize());
   }
 }
 
@@ -46,14 +46,15 @@ class RespInteger extends RespType<int> {
 /// Implementation of a RESP bulk string.
 ///
 class RespBulkString extends RespType<String> {
-  static final nullString = '\$-1' + suffix;
+  static final nullString = utf8.encode('\$-1$suffix');
 
   const RespBulkString(String payload) : super('\$', payload);
 
   @override
-  String serialize() {
+  List<int> serialize() {
     if (payload != null) {
-      return '$prefix${payload.length}$suffix$payload$suffix';
+      final length = utf8.encode(payload).length;
+      return utf8.encode('$prefix${length}$suffix$payload$suffix');
     }
     return nullString;
   }
@@ -63,52 +64,56 @@ class RespBulkString extends RespType<String> {
 /// Implementation of a RESP array.
 ///
 class RespArray extends RespType<List<RespType>> {
-  static final nullArray = '\*-1' + suffix;
+  static final nullArray = utf8.encode('\*-1$suffix');
 
   const RespArray(List<RespType> payload) : super('*', payload);
 
   @override
-  String serialize() {
+  List<int> serialize() {
     if (payload != null) {
-      return '$prefix${payload.length}$suffix${payload.map((e) => e.serialize()).join('')}$suffix';
+      return [
+        ...utf8.encode('$prefix${payload.length}$suffix'),
+        ...payload.expand((element) => element.serialize()),
+        ...utf8.encode('$suffix'),
+      ];
     }
     return nullArray;
   }
 }
 
-Future<RespType> _deserializeRespType(_StreamReader _streamReader) async {
-  final typePrefix = await _streamReader.takeOne();
+Future<RespType> deserializeRespType(StreamReader streamReader) async {
+  final typePrefix = await streamReader.takeOne();
   switch (typePrefix) {
     case 0x2b: // simple string
-      final payload = utf8.decode(await _streamReader.takeWhile((data) => data != 0x0d));
-      await _streamReader.takeCount(2);
+      final payload = utf8.decode(await streamReader.takeWhile((data) => data != 0x0d));
+      await streamReader.takeCount(2);
       return RespSimpleString(payload);
     case 0x2d: // error
-      final payload = utf8.decode(await _streamReader.takeWhile((data) => data != 0x0d));
-      await _streamReader.takeCount(2);
+      final payload = utf8.decode(await streamReader.takeWhile((data) => data != 0x0d));
+      await streamReader.takeCount(2);
       return RespError(payload);
     case 0x3a: // integer
-      final payload = int.parse(utf8.decode(await _streamReader.takeWhile((data) => data != 0x0d)));
-      await _streamReader.takeCount(2);
+      final payload = int.parse(utf8.decode(await streamReader.takeWhile((data) => data != 0x0d)));
+      await streamReader.takeCount(2);
       return RespInteger(payload);
     case 0x24: // bulk string
-      final length = int.parse(utf8.decode(await _streamReader.takeWhile((data) => data != 0x0d)));
-      await _streamReader.takeCount(2);
+      final length = int.parse(utf8.decode(await streamReader.takeWhile((data) => data != 0x0d)));
+      await streamReader.takeCount(2);
       if (length == -1) {
         return RespBulkString(null);
       }
-      final payload = utf8.decode(await _streamReader.takeCount(length));
-      await _streamReader.takeCount(2);
+      final payload = utf8.decode(await streamReader.takeCount(length));
+      await streamReader.takeCount(2);
       return RespBulkString(payload);
     case 0x2a: // array
-      final count = int.parse(utf8.decode(await _streamReader.takeWhile((data) => data != 0x0d)));
-      await _streamReader.takeCount(2);
+      final count = int.parse(utf8.decode(await streamReader.takeWhile((data) => data != 0x0d)));
+      await streamReader.takeCount(2);
       if (count == -1) {
         return RespArray(null);
       }
       final elements = <RespType>[];
       for (var i = 0; i < count; i++) {
-        elements.add(await _deserializeRespType(_streamReader));
+        elements.add(await deserializeRespType(streamReader));
       }
       return RespArray(elements);
     default:
