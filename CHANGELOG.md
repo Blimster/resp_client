@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Added `dbsize` and `info` commands.
+- Fixed UTF-8 decoding issue.
+- Fixed issue in command `scan` when using a pattern.
+
 ## 0.2.0
 
 - Added pedantic linter rules
