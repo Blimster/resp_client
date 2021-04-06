@@ -1,5 +1,5 @@
 # resp_client
-A RESP (REdis Serialization Protocol) client for Dart. This package contains 3 libraries. `resp_server` implements the connectionn to the server, `resp_client` implements the Redis serialization protocol. `resp_commands` provides implementations of Redis commands in differents levels of convenient from low-level to easy-to-use.
+A RESP (REdis Serialization Protocol) client for Dart. This package contains 3 libraries. `resp_server` implements the connectionn to the server, `resp_client` implements the Redis serialization protocol. `resp_commands` provides implementations of Redis commands in differents levels of convenience from low-level to easy-to-use.
 
 # 3 Building blocks
 
@@ -36,6 +36,20 @@ void main(List<String> args) async {
 
 ```
 
+## RESP Types
+
+The RESP types are implemented by the classes:
+
+* `RespSimpleString` - payload type `String`
+* `RespBulkString` - payload type `String?`
+* `RespInteger` - payload type `int` 
+* `RespArray` - payload type `List<RespType>?`
+* `RespError` - payload type `String`
+
+All classes extends the class `RestType`. You can access the payload of a type using the getter `payload`.
+
+The class `RespType` provides methods to convert to a concrete type and getters to check if it is a concrete type.
+
 ## Use commands
 
 Not all Redis commands are implemented in all tiers yet. Nevertheless, it is possible to execute very Redis command using tier 0. You can create a command object of every tier using a `RespClient`. It is allowed to create multiple command objects on the same client. Command objects of tier 1 and 2 provides a getter to the underlying tier.
@@ -68,7 +82,7 @@ void main(List<String> args) async {
 
 ## Tier 1
 
-Commands of tier 1 provide some convenient on the parameter side. The user no longer has to build the commands from ground up. Instead, the commands are calle in a more Dart-like style. The results is always a `RespType` like in tier 0.
+Commands of tier 1 provide some convenience on the parameter side. The user no longer has to build the commands from ground up. Instead, the commands are calle in a more Dart-like style. The result is always a `RespType` like in tier 0.
 
 ```dart
 
@@ -96,9 +110,9 @@ void main(List<String> args) async {
 
 ## Tier 2
 
-Commands of tier 2 provide the same convenience on the parameter side as tier 1 commands. Additionally. The result of a command is converted for easy handling.
+Commands of tier 2 provide the same convenience on the parameter side as tier 1 commands. Additionally, the result of a command is converted for easy handling.
 
-To convert the result, assumptions are made. As an example get GET command returns a bulk string. Thus, the implementation tries to convert the result from a RespType to a RespBulkString and then return the payload of type String?. But, if a GET command is executed as part of a transaction, the result is a RespSimpleString and the payload has different meaning. 
+To convert the result, assumptions are made. As an example the GET command returns a bulk string. Thus, the implementation tries to convert the result from a RespType to a RespBulkString and then return the payload of type String?. But, if a GET command is executed as part of a transaction, the result is a RespSimpleString and the payload has different meaning. Thus, the command will fail. To get out of this, use the same command of the underlying tier.
 
 ```dart
 
