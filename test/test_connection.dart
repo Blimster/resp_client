@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
-import 'package:resp_client/resp_client.dart';
+import 'package:resp_client/resp_server.dart';
 
 class TestConnection implements RespServerConnection {
   final StreamController<List<int>> _in = StreamController<List<int>>();

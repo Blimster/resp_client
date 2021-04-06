@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+- BREAKING CHANGE: C'tor of `RespType` is no longer public.
+- BREAKING CHANGE: Class `RespCommands` is removed. Use `RespCommandsTier2` instead.
+- BREAKING CHANGE: Return type of `RespCommandsTier0.set()` is now `SetResult` instead of `bool`.
+- BREAKING CHANGE: Moved function `connectSocket` and interface `RespServerConnection` to library `resp_server`;
+- BREAKING CHANGE: Removed `RespClient.writeArrayOfBulk()`, Use `RespCommandsTier0.execute()` instead.
+- Added some convenient methods of `RespType`.
+- Added `multi`, `exec`, `discard`, `watch` and `unwatch` commands.
+
 ## 1.1.1
 
 - Added `dbsize` and `info` commands.

@@ -1,4 +1,4 @@
-part of resp_client;
+part of resp_server;
 
 class _SocketRespServer implements RespServerConnection {
   final Socket socket;

@@ -1,80 +1,75 @@
 part of resp_commands;
 
-enum SetMode { onlyIfNotExists, onlyIfExists }
+///
+/// Result of a set operation.
+///
+class SetResult {
+  ///
+  /// [true] if the value was set.
+  ///
+  final bool ok;
 
-class InsertMode {
-  static const before = InsertMode._('BEFORE');
-  static const after = InsertMode._('AFTER');
+  ///
+  /// The old value of the key before the operation.
+  ///
+  final String? old;
+  SetResult._(this.ok, this.old);
 
-  final String _value;
+  @override
+  String toString() => 'SetResult(ok: $ok, old: $old)';
+}
 
-  const InsertMode._(this._value);
+///
+/// The result of a scan operation.
+///
+class ScanResult {
+  int _cursor = 0;
+  List<String> _keys = [];
+
+  ScanResult._(List<RespType>? result) {
+    if (result != null && result.length == 2) {
+      final element1 = result[0] as RespBulkString;
+      final payload1 = element1.payload;
+      if (payload1 != null) {
+        _cursor = int.parse(payload1);
+      }
+
+      final element2 = result[1] as RespArray;
+      final payload2 = element2.payload;
+      if (payload2 != null) {
+        _keys = payload2.cast<RespBulkString>().map((e) => e.payload!).toList(growable: false);
+      }
+    }
+  }
+
+  int get cursor => _cursor;
+
+  List<String> get keys => _keys;
+
+  ///
+  /// Returns true, if there more elements (cursor != 0).
+  ///
+  bool get hasMoreElements => _cursor != 0;
+
+  @override
+  String toString() => 'ScanResult(cursor: $_cursor, keys: $_keys)';
 }
 
 ///
 /// Easy to use API for the Redis commands.
 ///
-class RespCommands {
-  final RespClient client;
+class RespCommandsTier2 {
+  final RespCommandsTier1 tier1;
 
-  RespCommands(this.client);
-
-  Future<RespType> _execCmd(List<Object> elements) async {
-    return client.writeArrayOfBulk(elements);
-  }
-
-  String? _getBulkString(RespType type) {
-    if (type is RespBulkString) {
-      return type.payload;
-    } else if (type is RespArray && type.payload == null) {
-      return null; // redis sometimes return a null array to represent a null value
-    } else if (type is RespError) {
-      throw StateError('error message from server: ${type.payload}');
-    }
-    throw StateError('unexpected return type: ${type.runtimeType}');
-  }
-
-  String _getSimpleString(RespType type) {
-    if (type is RespSimpleString) {
-      return type.payload;
-    } else if (type is RespError) {
-      throw StateError('error message from server: ${type.payload}');
-    }
-    throw StateError('unexpected return type: ${type.runtimeType}');
-  }
-
-  int _getInteger(RespType type) {
-    if (type is RespInteger) {
-      return type.payload;
-    } else if (type is RespError) {
-      throw StateError('error message from server: ${type.payload}');
-    }
-    throw StateError('unexpected return type: ${type.runtimeType}');
-  }
-
-  bool _getBool(RespType type) {
-    try {
-      return _getSimpleString(type) == 'OK';
-    } on StateError {
-      return false;
-    }
-  }
-
-  List<RespType>? _getArray(RespType type) {
-    if (type is RespArray) {
-      return type.payload;
-    } else if (type is RespError) {
-      throw StateError('error message from server: ${type.payload}');
-    }
-    throw StateError('unexpected return type: ${type.runtimeType}');
-  }
+  RespCommandsTier2(RespClient client) : tier1 = RespCommandsTier1.tier0(RespCommandsTier0(client));
+  RespCommandsTier2.tier0(RespCommandsTier0 tier0) : tier1 = RespCommandsTier1.tier0(tier0);
+  RespCommandsTier2.tier1(this.tier1);
 
   ///
   /// Returns a list of connected clients.
   ///
   Future<List<String>> clientList() async {
-    final result = await _execCmd(['CLIENT', 'LIST']);
-    final bulkString = _getBulkString(result);
+    final bulkString = (await tier1.clientList()).toBulkString().payload;
     if (bulkString != null) {
       return bulkString.split('\n').where((e) => e.isNotEmpty).toList(growable: false);
     }
@@ -82,81 +77,81 @@ class RespCommands {
   }
 
   ///
-  /// Sets a value for the given key. Returns [true], if the value was successfully set. Otherwise, [false] is returned.
+  /// Sets a value for the given key.
   ///
-  Future<bool> set(String key, Object value, {Duration? expire, SetMode? mode}) async {
-    final cmd = ['SET', key, value];
-
-    if (expire != null) {
-      cmd.addAll(['PX', '${expire.inMilliseconds}']);
-    }
-
-    if (mode == SetMode.onlyIfNotExists) {
-      cmd.add('NX');
-    } else if (mode == SetMode.onlyIfExists) {
-      cmd.add('XX');
-    }
-
-    final result = await _execCmd(cmd);
-    return _getSimpleString(result) == 'OK';
+  /// Returns a [SetResult].
+  ///
+  Future<SetResult> set(String key, Object value, {ExpireMode? expire, SetMode? mode, bool get = false}) async {
+    final result = (await tier1.set(key, value, expire: expire, mode: mode, get: get));
+    return result.handleAs<SetResult>(
+      simple: (_) => SetResult._(true, null),
+      bulk: (type) => SetResult._(type.payload != null, type.payload),
+      error: (_) => SetResult._(false, null),
+    );
   }
 
   ///
-  /// Returns the value for the given [key]. If no value if present for the key, [null] is returned.
+  /// Returns the value for the given [key].
+  /// If no value if present for the key, [null] is returned.
   ///
   Future<String?> get(String key) async {
-    return _getBulkString(await _execCmd(['GET', key]));
+    return (await tier1.get(key)).toBulkString().payload;
   }
 
   ///
-  /// Removes the value for the given [keys]. Returns the number of deleted values.
+  /// Removes the value for the given [keys].
+  /// Returns the number of deleted values.
   ///
   Future<int> del(List<String> keys) async {
-    return _getInteger(await _execCmd(['DEL', ...keys]));
+    return (await tier1.del(keys)).toInteger().payload;
   }
 
   ///
   /// Returns the number of values exists for the given [keys]
   ///
   Future<int> exists(List<String> keys) async {
-    return _getInteger(await _execCmd(['EXISTS', ...keys]));
+    return (await tier1.exists(keys)).toInteger().payload;
   }
 
   ///
-  /// Return the ttl of the given [key] in seconds. Returns [-1], if the key has no ttl. Returns [-2], if the key does not exists.
+  /// Return the ttl of the given [key] in seconds. Returns
+  /// [-1], if the key has no ttl. Returns [-2], if the key
+  /// does not exists.
   ///
   Future<int> ttl(String key) async {
-    return _getInteger(await _execCmd(['TTL', key]));
+    return (await tier1.ttl(key)).toInteger().payload;
   }
 
   ///
-  /// Sets the timeout for the given [key]. Returns [true], if the timeout was successfully set. Otherwise, [false] is returned.
+  /// Sets the timeout for the given [key]. Returns [true],
+  /// if the timeout was successfully set. Otherwise,
+  /// [false] is returned.
   ///
   Future<bool> pexpire(String key, Duration timeout) async {
-    return _getInteger(await _execCmd(['PEXPIRE', key, timeout.inMilliseconds])) == 1;
+    return (await tier1.pexpire(key, timeout)).toInteger().payload == 1;
   }
 
   ///
   /// Selects the Redis logical database. Completes with no value, if the command was successful.
   ///
   Future<void> select(int index) async {
-    _getSimpleString(await _execCmd(['SELECT', index])) == 'OK';
+    (await tier1.select(index)).toSimpleString();
     return null;
   }
 
   ///
   /// Flushes the currently selected database. Completes with no value, if the command was successful.
   ///
-  Future<void> flushDb({bool doAsync = false}) async {
-    _getSimpleString(await _execCmd(doAsync ? ['FLUSHDB', 'ASYNC'] : ['FLUSHDB'])) == 'OK';
+  Future<void> flushDb({bool? doAsync}) async {
+    (await tier1.flushDb(doAsync: doAsync)).toSimpleString();
     return null;
   }
 
   ///
   /// Flushes all databases. Completes with no value, if the command was successful.
   ///
-  Future<void> flushAll({bool doAsync = false}) async {
-    _getSimpleString(await _execCmd(doAsync ? ['FLUSHALL', 'ASYNC'] : ['FLUSHDB'])) == 'OK';
+  Future<void> flushAll({bool? doAsync}) async {
+    (await tier1.flushAll(doAsync: doAsync)).toSimpleString();
     return null;
   }
 
@@ -164,7 +159,7 @@ class RespCommands {
   /// Sends the authentication password to the server. Returns true, if the password matches, otherwise false.
   ///
   Future<bool> auth(String password) async {
-    final result = await _execCmd(['AUTH', password]);
+    final result = await tier1.auth(password);
     if (result is RespSimpleString) {
       return result.payload == 'OK';
     } else {
@@ -180,8 +175,7 @@ class RespCommands {
   /// exists in the hash and the value was updated.
   ///
   Future<bool> hset(String key, String field, Object value) async {
-    final result = _getInteger(await _execCmd(['HSET', key, field, value]));
-    return result == 1;
+    return (await tier1.hset(key, field, value)).toInteger().payload == 1;
   }
 
   ///
@@ -193,8 +187,7 @@ class RespCommands {
   /// exists in the hash and no operation was performed.
   ///
   Future<bool> hsetnx(String key, String field, Object value) async {
-    final result = _getInteger(await _execCmd(['HSETNX', key, field, value]));
-    return result == 1;
+    return (await tier1.hsetnx(key, field, value)).toInteger().payload == 1;
   }
 
   ///
@@ -204,15 +197,8 @@ class RespCommands {
   ///
   /// True, if the operation was successful.
   ///
-  Future<bool> hmset(String key, Map<String, String> keysAndValues) async {
-    final params = <String>[];
-    keysAndValues.forEach((k, v) {
-      params.add(k);
-      params.add(v);
-    });
-
-    final result = _getSimpleString(await _execCmd(['HMSET', key, ...params]));
-    return result == 'OK';
+  Future<void> hmset(String key, Map<String, String> keysAndValues) async {
+    (await tier1.hmset(key, keysAndValues)).toSimpleString();
   }
 
   ///
@@ -222,7 +208,7 @@ class RespCommands {
   /// does not exist.
   ///
   Future<String?> hget(String key, String field) async {
-    return _getBulkString(await _execCmd(['HGET', key, field]));
+    return (await tier1.hget(key, field)).toBulkString().payload;
   }
 
   ///
@@ -234,20 +220,19 @@ class RespCommands {
   /// not exist.
   ///
   Future<Map<String, String?>> hgetall(String key) async {
-    final result = _getArray(await _execCmd(['HGETALL', key]));
+    final result = (await tier1.hgetall(key)).toArray().payload;
 
+    final map = <String, String?>{};
     if (result != null) {
-      final map = <String, String?>{};
       for (var i = 0; i < result.length; i += 2) {
-        final key = _getBulkString(result[i]);
-        final value = _getBulkString(result[i + 1]);
+        final key = result[i].toBulkString().payload;
+        final value = result[i + 1].toBulkString().payload;
         if (key != null) {
           map[key] = value;
         }
       }
-      return map;
     }
-    return {};
+    return map;
   }
 
   ///
@@ -260,12 +245,12 @@ class RespCommands {
   /// A map of values associated with the given fields, in the same order as they are requested.
   ///
   Future<Map<String, String?>> hmget(String key, List<String> fields) async {
-    final result = _getArray(await _execCmd(['HMGET', key, ...fields]));
+    final result = (await tier1.hmget(key, fields)).toArray().payload;
 
     if (result != null) {
       final hash = <String, String?>{};
       for (var i = 0; i < fields.length; i++) {
-        hash[fields[i]] = _getBulkString(result[i]);
+        hash[fields[i]] = result[i].toBulkString().payload;
       }
       return hash;
     }
@@ -281,7 +266,7 @@ class RespCommands {
   /// existing fields.
   ///
   Future<int> hdel(String key, List<String> fields) async {
-    return _getInteger(await _execCmd(['HDEL', key, ...fields]));
+    return (await tier1.hdel(key, fields)).toInteger().payload;
   }
 
   ///
@@ -291,8 +276,7 @@ class RespCommands {
   /// does not exist.
   ///
   Future<bool> hexists(String key, String field) async {
-    final result = _getInteger(await _execCmd(['HEXISTS', key, field]));
-    return result == 1;
+    return (await tier1.hexists(key, field)).toInteger().payload == 1;
   }
 
   ///
@@ -301,9 +285,9 @@ class RespCommands {
   /// List of fields in the hash, or an empty list when key does not exist.
   ///
   Future<List<String>> hkeys(String key) async {
-    final result = _getArray(await _execCmd(['HKEYS', key]));
+    final result = (await tier1.hkeys(key)).toArray().payload;
     if (result != null) {
-      return result.map((e) => _getBulkString(e)!).toList(growable: false);
+      return result.map((e) => e.toBulkString().payload!).toList(growable: false);
     }
     return [];
   }
@@ -314,9 +298,9 @@ class RespCommands {
   /// List of values in the hash, or an empty list when key does not exist.
   ///
   Future<List<String?>> hvals(String key) async {
-    final result = _getArray(await _execCmd(['HVALS', key]));
+    final result = (await tier1.hvals(key)).toArray().payload;
     if (result != null) {
-      return result.map((e) => _getBulkString(e)).toList(growable: false);
+      return result.map((e) => e.toBulkString().payload).toList(growable: false);
     }
     return [];
   }
@@ -325,9 +309,9 @@ class RespCommands {
   /// See https://redis.io/commands/blpop
   ///
   Future<List<String?>> blpop(List<String> keys, int timeout) async {
-    final result = _getArray(await _execCmd(['BLPOP', ...keys, timeout]));
+    final result = (await tier1.blpop(keys, timeout)).toArray().payload;
     if (result != null) {
-      return result.map((e) => _getBulkString(e)).toList(growable: false);
+      return result.map((e) => e.toBulkString().payload).toList(growable: false);
     }
     return [];
   }
@@ -352,9 +336,9 @@ class RespCommands {
   /// popped element.
   ///
   Future<List<String?>> brpop(List<String> keys, int timeout) async {
-    final result = _getArray(await _execCmd(['BRPOP', ...keys, timeout]));
+    final result = (await tier1.brpop(keys, timeout)).toArray().payload;
     if (result != null) {
-      return result.map((e) => _getBulkString(e)).toList(growable: false);
+      return result.map((e) => e.toBulkString().payload).toList(growable: false);
     }
     return [];
   }
@@ -373,7 +357,11 @@ class RespCommands {
   /// If timeout is reached, a Null reply is returned.
   ///
   Future<String?> brpoplpush(String source, String destination, int timeout) async {
-    return _getBulkString(await _execCmd(['BRPOPLPUSH', source, destination, timeout]));
+    final result = (await tier1.brpoplpush(source, destination, timeout));
+    return result.handleAs(
+      bulk: (type) => type.payload,
+      array: (_) => null,
+    );
   }
 
   ///
@@ -388,7 +376,7 @@ class RespCommands {
   /// Returns the requested element, or nil when index is out of range.
   ///
   Future<String?> lindex(String key, int index) async {
-    return _getBulkString(await _execCmd(['LINDEX', key, index]));
+    return (await tier1.lindex(key, index)).toBulkString().payload;
   }
 
   ///
@@ -404,7 +392,7 @@ class RespCommands {
   /// when the value pivot was not found.
   ///
   Future<int> linsert(String key, InsertMode insertMode, Object pivot, Object value) async {
-    return _getInteger(await _execCmd(['LINSERT', key, insertMode._value, pivot, value]));
+    return (await tier1.linsert(key, insertMode, pivot, value)).toInteger().payload;
   }
 
   ///
@@ -415,7 +403,7 @@ class RespCommands {
   /// Returns the length of the list at key.
   ///
   Future<int> llen(String key) async {
-    return _getInteger(await _execCmd(['LLEN', key]));
+    return (await tier1.llen(key)).toInteger().payload;
   }
 
   ///
@@ -424,7 +412,7 @@ class RespCommands {
   /// Returns the value of the first element, or nil when key does not exist.
   ///
   Future<String?> lpop(String key) async {
-    return _getBulkString(await _execCmd(['LPOP', key]));
+    return (await tier1.lpop(key)).toBulkString().payload;
   }
 
   ///
@@ -443,7 +431,7 @@ class RespCommands {
   /// Returns the length of the list after the push operations.
   ///
   Future<int> lpush(String key, List<Object> values) async {
-    return _getInteger(await _execCmd(['LPUSH', key, ...values]));
+    return (await tier1.lpush(key, values)).toInteger().payload;
   }
 
   ///
@@ -452,7 +440,7 @@ class RespCommands {
   /// will be performed when key does not yet exist.
   ///
   Future<int> lpushx(String key, List<Object> values) async {
-    return _getInteger(await _execCmd(['LPUSHX', key, ...values]));
+    return (await tier1.lpushx(key, values)).toInteger().payload;
   }
 
   ///
@@ -477,9 +465,9 @@ class RespCommands {
   /// Returns list of elements in the specified range.
   ///
   Future<List<String?>> lrange(String key, int start, int stop) async {
-    final result = _getArray(await _execCmd(['LRANGE', key, start, stop]));
+    final result = (await tier1.lrange(key, start, stop)).toArray().payload;
     if (result != null) {
-      return result.map((e) => _getBulkString(e)).toList(growable: false);
+      return result.map((e) => e.toBulkString().payload).toList(growable: false);
     }
     return [];
   }
@@ -506,7 +494,7 @@ class RespCommands {
   /// Returns the number of removed elements.
   ///
   Future<int> lrem(String key, int count, Object value) async {
-    return _getInteger(await _execCmd(['LREM', key, count, value]));
+    return (await tier1.lrem(key, count, value)).toInteger().payload;
   }
 
   ///
@@ -515,7 +503,11 @@ class RespCommands {
   /// False is returned for out of range indexes.
   ///
   Future<bool> lset(String key, int index, Object value) async {
-    return _getBool(await _execCmd(['LSET', key, index, value]));
+    final result = (await tier1.lset(key, index, value));
+    return result.handleAs<bool>(
+      simple: (_) => true,
+      error: (_) => false,
+    );
   }
 
   ///
@@ -545,7 +537,7 @@ class RespCommands {
   /// because in the average case just one element is removed from the tail of the list.
   ///
   Future<void> ltrim(String key, int start, int stop) async {
-    _getSimpleString(await _execCmd(['LTRIM', key, start, stop]));
+    (await tier1.ltrim(key, start, stop)).toSimpleString();
     return null;
   }
 
@@ -555,7 +547,7 @@ class RespCommands {
   /// Returns the value of the last element, or nil when key does not exist.
   ///
   Future<String?> rpop(String key) async {
-    return _getBulkString(await _execCmd(['RPOP', key]));
+    return (await tier1.rpop(key)).toBulkString().payload;
   }
 
   ///
@@ -573,7 +565,7 @@ class RespCommands {
   /// Returns the element being popped and pushed.
   ///
   Future<String?> rpoplpush(String source, String destination) async {
-    return _getBulkString(await _execCmd(['RPOPLPUSH', source, destination]));
+    return (await tier1.rpoplpush(source, destination)).toBulkString().payload;
   }
 
   ///
@@ -592,7 +584,7 @@ class RespCommands {
   /// Returns the length of the list after the push operation.
   ///
   Future<int> rpush(String key, List<Object> values) async {
-    return _getInteger(await _execCmd(['RPUSH', key, ...values]));
+    return (await tier1.rpush(key, values)).toInteger().payload;
   }
 
   ///
@@ -603,7 +595,7 @@ class RespCommands {
   /// Returns the length of the list after the push operation.
   ///
   Future<int> rpushx(String key, List<Object> values) async {
-    return _getInteger(await _execCmd(['RPUSHX', key, ...values]));
+    return (await tier1.rpushx(key, values)).toInteger().payload;
   }
 
   ///
@@ -613,12 +605,7 @@ class RespCommands {
   /// See https://redis.io/commands/scan for more detailed documentation.
   ///
   Future<ScanResult> scan(int cursor, {String? pattern, int? count}) async {
-    final result = _getArray(await _execCmd([
-      'SCAN',
-      '$cursor',
-      if (pattern != null) ...['MATCH', pattern],
-      if (count != null) ...['COUNT', count],
-    ]));
+    final result = (await tier1.scan(cursor, pattern: pattern, count: count)).toArray().payload;
     return ScanResult._(result);
   }
 
@@ -626,7 +613,7 @@ class RespCommands {
   /// Return the number of keys in the currently-selected database.
   ///
   Future<int> dbsize() async {
-    return _getInteger(await _execCmd(['DBSIZE']));
+    return (await tier1.dbsize()).toInteger().payload;
   }
 
   ///
@@ -664,7 +651,7 @@ class RespCommands {
   /// # character) or a property. All the properties are in
   /// the form of field:value terminated by \r\n.
   Future<String?> info([String? section]) async {
-    return _getBulkString(await _execCmd(['INFO', if (section != null) section]));
+    return (await tier1.info(section)).toBulkString().payload;
   }
 
   ///
@@ -688,7 +675,7 @@ class RespCommands {
   /// Returns the value of key after the increment.
   ///
   Future<int> incr(String key) async {
-    return _getInteger(await _execCmd(['INCR', key]));
+    return (await tier1.incr(key)).toInteger().payload;
   }
 
   ///
@@ -705,7 +692,7 @@ class RespCommands {
   /// Returns he value of key after the increment.
   ///
   Future<int> incrby(String key, int increment) async {
-    return _getInteger(await _execCmd(['INCRBY', key, '$increment']));
+    return (await tier1.incrby(key, increment)).toInteger().payload;
   }
 
   ///
@@ -722,7 +709,7 @@ class RespCommands {
   /// Returns the value of key after the decrement.
   ///
   Future<int> decr(String key) async {
-    return _getInteger(await _execCmd(['DECR', key]));
+    return (await tier1.decr(key)).toInteger().payload;
   }
 
   ///
@@ -739,7 +726,27 @@ class RespCommands {
   /// Returns the value of key after the decrement.
   ///
   Future<int> decrby(String key, int decrement) async {
-    return _getInteger(await _execCmd(['DECRBY', key, '$decrement']));
+    return (await tier1.decrby(key, decrement)).toInteger().payload;
+  }
+
+  Future<bool> multi() async {
+    return (await tier1.multi()).toSimpleString().payload == 'OK';
+  }
+
+  Future<RespArray> exec() async {
+    return (await tier1.exec()).toArray();
+  }
+
+  Future<bool> discard() async {
+    return (await tier1.discard()).toSimpleString().payload == 'OK';
+  }
+
+  Future<bool> watch(List<String> keys) async {
+    return (await tier1.watch(keys)).toSimpleString().payload == 'OK';
+  }
+
+  Future<bool> unwatch() async {
+    return (await tier1.unwatch()).toSimpleString().payload == 'OK';
   }
 
   ///
@@ -748,7 +755,7 @@ class RespCommands {
   /// Returns the number of clients that received the message.
   ///
   Future<int> publish(String channel, Object message) async {
-    return _getInteger(await _execCmd(['PUBLISH', channel, message]));
+    return (await tier1.publish(channel, message)).toInteger().payload;
   }
 
   ///
@@ -759,7 +766,7 @@ class RespCommands {
   /// PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
   ///
   Future<void> subscribe(List<String> channels) async {
-    await _execCmd(['SUBSCRIBE', ...channels]);
+    await tier1.subscribe(channels);
   }
 
   ///
@@ -771,42 +778,6 @@ class RespCommands {
   /// unsubscribed channel will be sent to the client.
   ///
   Future<void> unsubscribe(Iterable<String> channels) async {
-    await _execCmd(['UNSUBSCRIBE', ...channels]);
+    await tier1.unsubscribe(channels);
   }
-}
-
-///
-/// The result of a scan operation.
-///
-class ScanResult {
-  int _cursor = 0;
-  List<String> _keys = [];
-
-  ScanResult._(List<RespType>? result) {
-    if (result != null && result.length == 2) {
-      final element1 = result[0] as RespBulkString;
-      final payload1 = element1.payload;
-      if (payload1 != null) {
-        _cursor = int.parse(payload1);
-      }
-
-      final element2 = result[1] as RespArray;
-      final payload2 = element2.payload;
-      if (payload2 != null) {
-        _keys = payload2.cast<RespBulkString>().map((e) => e.payload!).toList(growable: false);
-      }
-    }
-  }
-
-  int get cursor => _cursor;
-
-  List<String> get keys => _keys;
-
-  ///
-  /// Returns true, if there more elements (cursor != 0).
-  ///
-  bool get hasMoreElements => _cursor != 0;
-
-  @override
-  String toString() => 'ScanResult{cursor: $_cursor, keys: $_keys}';
 }

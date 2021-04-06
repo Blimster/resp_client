@@ -7,12 +7,12 @@ import 'test_connection.dart';
 void main() {
   late TestConnection connection;
   late RespClient client;
-  late RespCommands commands;
+  late RespCommandsTier2 commands;
 
   setUp(() {
     connection = TestConnection();
     client = RespClient(connection);
-    commands = RespCommands(client);
+    commands = RespCommandsTier2(client);
   });
 
   tearDown(() {
@@ -33,12 +33,4 @@ void main() {
 
     connection.assertAllResponsesSent();
   });
-
-//  test('correct error handling', () async {
-//    connection.responseOnRequest(RespArray([RespBulkString('SET'), RespBulkString('foo'), RespBulkString('bar')]).serialize(), StateError('test'));
-//    connection.responseOnRequest(RespArray([RespBulkString('PEXPIRE'), RespBulkString('foo'), RespBulkString('10000')]).serialize(), ':1\r\n');
-//
-//    await commands.set('foo', 'bar');
-//    await commands.pexpire('foo', Duration(seconds: 10));
-//  });
 }
